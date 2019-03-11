@@ -1,63 +1,57 @@
 import Scoreboard from './scoreboard.js';
-import {Shape, Shapes} from './shape.js';
+import Shape from './shape.js';
+import Board from './board.js';
 
 'use strict';
-var canvas = document.querySelector('canvas');
+const canvas = document.querySelector('canvas');
 canvas.width = 640;
 canvas.height = 640;
 
-var g = canvas.getContext('2d');
+const g = canvas.getContext('2d');
 
-var right = { x: 1, y: 0 };
-var down = { x: 0, y: 1 };
-var left = { x: -1, y: 0 };
+const right = { x: 1, y: 0 };
+const down = { x: 0, y: 1 };
+const left = { x: -1, y: 0 };
 
-var EMPTY = -1;
-var BORDER = -2;
+const nRows = 18;
+const nCols = 12;
+const blockSize = 30;
+const topMargin = 50;
+const leftMargin = 20;
+const scoreX = 400;
+const scoreY = 330;
+const titleX = 130;
+const titleY = 160;
+const clickX = 120;
+const clickY = 400;
+const previewCenterX = 467;
+const previewCenterY = 97;
+const mainFont = 'bold 48px monospace';
+const smallFont = 'bold 18px monospace';
+const colors = ['green', 'red', 'blue', 'purple', 'orange', 'blueviolet', 'magenta'];
+const gridRect = { x: 46, y: 47, w: 308, h: 517 };
+const previewRect = { x: 387, y: 47, w: 200, h: 200 };
+const titleRect = { x: 100, y: 95, w: 252, h: 100 };
+const clickRect = { x: 50, y: 375, w: 252, h: 40 };
+const outerRect = { x: 5, y: 5, w: 630, h: 630 };
+const squareBorder = 'white';
+const titlebgColor = 'white';
+const textColor = 'black';
+const bgColor = '#DDEEFF';
+const gridColor = '#BECFEA';
+const gridBorderColor = '#7788AA';
+const largeStroke = 5;
+const smallStroke = 2;
 
-var fallingShape;
-var nextShape;
-var dim = 640;
-var nRows = 18;
-var nCols = 12;
-var blockSize = 30;
-var topMargin = 50;
-var leftMargin = 20;
-var scoreX = 400;
-var scoreY = 330;
-var titleX = 130;
-var titleY = 160;
-var clickX = 120;
-var clickY = 400;
-var previewCenterX = 467;
-var previewCenterY = 97;
-var mainFont = 'bold 48px monospace';
-var smallFont = 'bold 18px monospace';
-var colors = ['green', 'red', 'blue', 'purple', 'orange', 'blueviolet', 'magenta'];
-var gridRect = { x: 46, y: 47, w: 308, h: 517 };
-var previewRect = { x: 387, y: 47, w: 200, h: 200 };
-var titleRect = { x: 100, y: 95, w: 252, h: 100 };
-var clickRect = { x: 50, y: 375, w: 252, h: 40 };
-var outerRect = { x: 5, y: 5, w: 630, h: 630 };
-var squareBorder = 'white';
-var titlebgColor = 'white';
-var textColor = 'black';
-var bgColor = '#DDEEFF';
-var gridColor = '#BECFEA';
-var gridBorderColor = '#7788AA';
-var largeStroke = 5;
-var smallStroke = 2;
+const scoreboard = new Scoreboard();
+const board = new Board(nRows, nCols);
 
-// position of falling shape
-var fallingShapeRow;
-var fallingShapeCol;
+let fallingShape;
+let nextShape;
 
-var keyDown = false;
-var fastDown = false;
-//var lastFrameTime = -1;
-
-var grid = [];
-var scoreboard = new Scoreboard();
+let keyDown = false;
+let fastDown = false;
+//let lastFrameTime = -1;
 
 addEventListener('keydown', function (event) {
     if (!keyDown) {
@@ -70,28 +64,28 @@ addEventListener('keydown', function (event) {
 
             case 'w':
             case 'ArrowUp':
-                if (canRotate(fallingShape))
-                    rotate(fallingShape);
+                if (fallingShape.canRotate(board.grid))
+                    fallingShape.rotate();
                 break;
 
             case 'a':
             case 'ArrowLeft':
-                if (canMove(fallingShape, left))
-                    move(left);
+                if (fallingShape.canMove(board.grid, left))
+                    fallingShape.move(left);
                 break;
 
             case 'd':
             case 'ArrowRight':
-                if (canMove(fallingShape, right))
-                    move(right);
+                if (fallingShape.canMove(board.grid, right))
+                    fallingShape.move(right);
                 break;
 
             case 's':
             case 'ArrowDown':
                 if (!fastDown) {
                     fastDown = true;
-                    while (canMove(fallingShape, down)) {
-                        move(down);
+                    while (fallingShape.canMove(board.grid, down)) {
+                        fallingShape.move(down);
                         draw();
                     }
                     shapeHasLanded();
@@ -112,100 +106,21 @@ addEventListener('keyup', function () {
     fastDown = false;
 });
 
-function canRotate(s) {
-    if (s === Shapes.Square)
-        return false;
-
-    var pos = new Array(4);
-    for (var i = 0; i < pos.length; i++) {
-        pos[i] = s.pos[i].slice();
-    }
-
-    pos.forEach(function (row) {
-        var tmp = row[0];
-        row[0] = row[1];
-        row[1] = -tmp;
-    });
-
-    return pos.every(function (p) {
-        var newCol = fallingShapeCol + p[0];
-        var newRow = fallingShapeRow + p[1];
-        return grid[newRow][newCol] === EMPTY;
-    });
-}
-
-function rotate(s) {
-    if (s === Shapes.Square)
-        return;
-
-    s.pos.forEach(function (row) {
-        var tmp = row[0];
-        row[0] = row[1];
-        row[1] = -tmp;
-    });
-}
-
-function move(dir) {
-    fallingShapeRow += dir.y;
-    fallingShapeCol += dir.x;
-}
-
-function canMove(s, dir) {
-    return s.pos.every(function (p) {
-        var newCol = fallingShapeCol + dir.x + p[0];
-        var newRow = fallingShapeRow + dir.y + p[1];
-        return grid[newRow][newCol] === EMPTY;
-    });
-}
-
 function shapeHasLanded() {
-    addShape(fallingShape);
-    if (fallingShapeRow < 2) {
+    board.addShape(fallingShape);
+    if (fallingShape.row < 2) {
         scoreboard.setGameOver();
         scoreboard.setTopscore();
     } else {
-        scoreboard.addLines(removeLines());
+        scoreboard.addLines(board.removeLines());
     }
     selectShape();
 }
 
-function removeLines() {
-    var count = 0;
-    for (var r = 0; r < nRows - 1; r++) {
-        for (var c = 1; c < nCols - 1; c++) {
-            if (grid[r][c] === EMPTY)
-                break;
-            if (c === nCols - 2) {
-                count++;
-                removeLine(r);
-            }
-        }
-    }
-    return count;
-}
-
-function removeLine(line) {
-    for (var c = 0; c < nCols; c++)
-        grid[line][c] = EMPTY;
-
-    for (var c = 0; c < nCols; c++) {
-        for (var r = line; r > 0; r--)
-            grid[r][c] = grid[r - 1][c];
-    }
-}
-
-function addShape(s) {
-    s.pos.forEach(function (p) {
-        grid[fallingShapeRow + p[1]][fallingShapeCol + p[0]] = s.ordinal;
-    });
-}
-
 function selectShape() {
-    fallingShapeRow = 1;
-    fallingShapeCol = 5;
     fallingShape = nextShape;
     nextShape = Shape.getRandomShape();
-    if (fallingShape != null) {
+    if (fallingShape) {
         fallingShape.reset();
     }
 }
@@ -246,7 +161,7 @@ function drawRect(r, color) {
 }
 
 function drawSquare(colorIndex, r, c) {
-    var bs = blockSize;
+    const bs = blockSize;
     g.fillStyle = colors[colorIndex];
     g.fillRect(leftMargin + c * bs, topMargin + r * bs, bs, bs);
 
@@ -262,10 +177,10 @@ function drawUI() {
     fillRect(gridRect, gridColor);
 
     // the blocks dropped in the grid
-    for (var r = 0; r < nRows; r++) {
-        for (var c = 0; c < nCols; c++) {
-            var idx = grid[r][c];
-            if (idx > EMPTY)
+    for (let r = 0; r < nRows; r++) {
+        for (let c = 0; c < nCols; c++) {
+            const idx = board.grid[r][c];
+            if (idx > board.EMPTY)
                 drawSquare(idx, r, c);
         }
     }
@@ -285,15 +200,15 @@ function drawUI() {
     g.fillText('score      ' + scoreboard.getScore(), scoreX, scoreY + 90);
 
     // preview
-    var minX = 5, minY = 5, maxX = 0, maxY = 0;
+    let minX = 5, minY = 5, maxX = 0, maxY = 0;
     nextShape.pos.forEach(function (p) {
         minX = Math.min(minX, p[0]);
         minY = Math.min(minY, p[1]);
         maxX = Math.max(maxX, p[0]);
         maxY = Math.max(maxY, p[1]);
     });
-    var cx = previewCenterX - ((minX + maxX + 1) / 2.0 * blockSize);
-    var cy = previewCenterY - ((minY + maxY + 1) / 2.0 * blockSize);
+    const cx = previewCenterX - ((minX + maxX + 1) / 2.0 * blockSize);
+    const cy = previewCenterY - ((minY + maxY + 1) / 2.0 * blockSize);
 
     g.translate(cx, cy);
     nextShape.shape.forEach(function (p) {
@@ -303,26 +218,26 @@ function drawUI() {
 }
 
 function drawFallingShape() {
-    var idx = fallingShape.ordinal;
+    const idx = fallingShape.ordinal;
     fallingShape.pos.forEach(function (p) {
-        drawSquare(idx, fallingShapeRow + p[1], fallingShapeCol + p[0]);
+        drawSquare(idx, fallingShape.row + p[1], fallingShape.col + p[0]);
     });
 }
 
 function animate(lastFrameTime) {
-    var requestId = requestAnimationFrame(function () {
+    const requestId = requestAnimationFrame(function () {
         animate(lastFrameTime);
     });
 
-    var time = new Date().getTime();
-    var delay = scoreboard.getSpeed();
+    const time = new Date().getTime();
+    const delay = scoreboard.getSpeed();
 
     if (lastFrameTime + delay < time) {
 
         if (!scoreboard.isGameOver()) {
 
-            if (canMove(fallingShape, down)) {
-                move(down);
+            if (fallingShape.canMove(board.grid, down)) {
+                fallingShape.move(down);
             } else {
                 shapeHasLanded();
             }
@@ -336,30 +251,13 @@ function animate(lastFrameTime) {
 }
 
 function startNewGame() {
-    initGrid();
+    board.initGrid();
     selectShape();
     scoreboard.reset();
     animate(-1);
 }
 
-function initGrid() {
-    function fill(arr, value) {
-        for (var i = 0; i < arr.length; i++) {
-            arr[i] = value;
-        }
-    }
-    for (var r = 0; r < nRows; r++) {
-        grid[r] = new Array(nCols);
-        fill(grid[r], EMPTY);
-        for (var c = 0; c < nCols; c++) {
-            if (c === 0 || c === nCols - 1 || r === nRows - 1)
-                grid[r][c] = BORDER;
-        }
-    }
-}
-
 function init() {
-    initGrid();
     selectShape();
     draw();
 }
