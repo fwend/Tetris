@@ -1,3 +1,6 @@
+import Scoreboard from './scoreboard.js';
+import {Shape, Shapes} from './shape.js';
+
 'use strict';
 var canvas = document.querySelector('canvas');
 canvas.width = 640;
@@ -197,143 +200,13 @@ function addShape(s) {
     });
 }
 
-function Shape(shape, o) {
-    this.shape = shape;
-    this.pos = this.reset();
-    this.ordinal = o;
-}
-
-var Shapes = {
-    ZShape: [[0, -1], [0, 0], [-1, 0], [-1, 1]],
-    SShape: [[0, -1], [0, 0], [1, 0], [1, 1]],
-    IShape: [[0, -1], [0, 0], [0, 1], [0, 2]],
-    TShape: [[-1, 0], [0, 0], [1, 0], [0, 1]],
-    Square: [[0, 0], [1, 0], [0, 1], [1, 1]],
-    LShape: [[-1, -1], [0, -1], [0, 0], [0, 1]],
-    JShape: [[1, -1], [0, -1], [0, 0], [0, 1]]
-};
-
-function getRandomShape() {
-    var keys = Object.keys(Shapes);
-    var ord = Math.floor(Math.random() * keys.length);
-    var shape = Shapes[keys[ord]];
-    return new Shape(shape, ord);
-}
-
-Shape.prototype.reset = function () {
-    this.pos = new Array(4);
-    for (var i = 0; i < this.pos.length; i++) {
-        this.pos[i] = this.shape[i].slice();
-    }
-    return this.pos;
-}
-
 function selectShape() {
     fallingShapeRow = 1;
     fallingShapeCol = 5;
     fallingShape = nextShape;
-    nextShape = getRandomShape();
+    nextShape = Shape.getRandomShape();
     if (fallingShape != null) {
         fallingShape.reset();
-    }
-}
-
-function Scoreboard() {
-    this.MAXLEVEL = 9;
-
-    var level = 0;
-    var lines = 0;
-    var score = 0;
-    var topscore = 0;
-    var gameOver = true;
-
-    this.reset = function () {
-        this.setTopscore();
-        level = lines = score = 0;
-        gameOver = false;
-    }
-
-    this.setGameOver = function () {
-        gameOver = true;
-    }
-
-    this.isGameOver = function () {
-        return gameOver;
-    }
-
-    this.setTopscore = function () {
-        if (score > topscore) {
-            topscore = score;
-        }
-    }
-
-    this.getTopscore = function () {
-        return topscore;
-    }
-
-    this.getSpeed = function () {
-
-        switch (level) {
-            case 0: return 700;
-            case 1: return 600;
-            case 2: return 500;
-            case 3: return 400;
-            case 4: return 350;
-            case 5: return 300;
-            case 6: return 250;
-            case 7: return 200;
-            case 8: return 150;
-            case 9: return 100;
-            default: return 100;
-        }
-    }
-
-    this.addScore = function (sc) {
-        score += sc;
-    }
-
-    this.addLines = function (line) {
-
-        switch (line) {
-            case 1:
-                this.addScore(10);
-                break;
-            case 2:
-                this.addScore(20);
-                break;
-            case 3:
-                this.addScore(30);
-                break;
-            case 4:
-                this.addScore(40);
-                break;
-            default:
-                return;
-        }
-
-        lines += line;
-        if (lines > 10) {
-            this.addLevel();
-        }
-    }
-
-    this.addLevel = function () {
-        lines %= 10;
-        if (level < this.MAXLEVEL) {
-            level++;
-        }
-    }
-
-    this.getLevel = function () {
-        return level;
-    }
-
-    this.getLines = function () {
-        return lines;
-    }
-
-    this.getScore = function () {
-        return score;
     }
 }
 
