@@ -1,11 +1,13 @@
 import Scoreboard from './scoreboard.js';
 import Shape from './shape.js';
-import Board from './board.js';
+import Board, {BOARD_EMPTY} from './board.js';
+import config from './config.js';
+import trans from './lang/en.js';
 
 'use strict';
 const canvas = document.querySelector('canvas');
-canvas.width = 640;
-canvas.height = 640;
+canvas.width = config.width;
+canvas.height = config.height;
 
 const g = canvas.getContext('2d');
 
@@ -15,33 +17,6 @@ const left = { x: -1, y: 0 };
 
 const nRows = 18;
 const nCols = 12;
-const blockSize = 30;
-const topMargin = 50;
-const leftMargin = 20;
-const scoreX = 400;
-const scoreY = 330;
-const titleX = 130;
-const titleY = 160;
-const clickX = 120;
-const clickY = 400;
-const previewCenterX = 467;
-const previewCenterY = 97;
-const mainFont = 'bold 48px monospace';
-const smallFont = 'bold 18px monospace';
-const colors = ['green', 'red', 'blue', 'purple', 'orange', 'blueviolet', 'magenta'];
-const gridRect = { x: 46, y: 47, w: 308, h: 517 };
-const previewRect = { x: 387, y: 47, w: 200, h: 200 };
-const titleRect = { x: 100, y: 95, w: 252, h: 100 };
-const clickRect = { x: 50, y: 375, w: 252, h: 40 };
-const outerRect = { x: 5, y: 5, w: 630, h: 630 };
-const squareBorder = 'white';
-const titlebgColor = 'white';
-const textColor = 'black';
-const bgColor = '#DDEEFF';
-const gridColor = '#BECFEA';
-const gridBorderColor = '#7788AA';
-const largeStroke = 5;
-const smallStroke = 2;
 
 const scoreboard = new Scoreboard();
 const board = new Board(nRows, nCols);
@@ -51,7 +26,6 @@ let nextShape;
 
 let keyDown = false;
 let fastDown = false;
-//let lastFrameTime = -1;
 
 addEventListener('keydown', function (event) {
     if (!keyDown) {
@@ -138,16 +112,16 @@ function draw() {
 }
 
 function drawStartScreen() {
-    g.font = mainFont;
+    g.font = config.mainFont;
 
-    fillRect(titleRect, titlebgColor);
-    fillRect(clickRect, titlebgColor);
+    fillRect(config.titleRect, config.titlebgColor);
+    fillRect(config.clickRect, config.titlebgColor);
 
-    g.fillStyle = textColor;
-    g.fillText('Tetris', titleX, titleY);
+    g.fillStyle = config.textColor;
+    g.fillText(trans.title, config.titleX, config.titleY);
 
-    g.font = smallFont;
-    g.fillText('click to start', clickX, clickY);
+    g.font = config.smallFont;
+    g.fillText(trans.start, config.clickX, config.clickY);
 }
 
 function fillRect(r, color) {
@@ -161,45 +135,52 @@ function drawRect(r, color) {
 }
 
 function drawSquare(colorIndex, r, c) {
-    const bs = blockSize;
-    g.fillStyle = colors[colorIndex];
-    g.fillRect(leftMargin + c * bs, topMargin + r * bs, bs, bs);
+    const bs = config.blockSize;
+    g.fillStyle = config.colors[colorIndex];
+    g.fillRect(config.leftMargin + c * bs, config.topMargin + r * bs, bs, bs);
 
-    g.lineWidth = smallStroke;
-    g.strokeStyle = squareBorder;
-    g.strokeRect(leftMargin + c * bs, topMargin + r * bs, bs, bs);
+    g.lineWidth = config.smallStroke;
+    g.strokeStyle = config.squareBorder;
+    g.strokeRect(config.leftMargin + c * bs, config.topMargin + r * bs, bs, bs);
 }
 
 function drawUI() {
 
     // background
-    fillRect(outerRect, bgColor);
-    fillRect(gridRect, gridColor);
+    fillRect(config.outerRect, config.bgColor);
+    fillRect(config.gridRect, config.gridColor);
 
-    // the blocks dropped in the grid
+    // the borders of grid
+    g.lineWidth = config.largeStroke;
+    drawRect(config.gridRect, config.gridBorderColor);
+    drawRect(config.outerRect, config.gridBorderColor);
+
+    drawBlocks();
+    drawScoreboard();
+    drawPreview();
+}
+
+function drawBlocks() {
+    // the blocks already dropped in the grid
     for (let r = 0; r < nRows; r++) {
         for (let c = 0; c < nCols; c++) {
             const idx = board.grid[r][c];
-            if (idx > board.EMPTY)
+            if (idx > BOARD_EMPTY)
                 drawSquare(idx, r, c);
         }
     }
+}
 
-    // the borders of grid and preview panel
-    g.lineWidth = largeStroke;
-    drawRect(gridRect, gridBorderColor);
-    drawRect(previewRect, gridBorderColor);
-    drawRect(outerRect, gridBorderColor);
+function drawScoreboard() {
+    g.fillStyle = config.textColor;
+    g.font = config.smallFont;
+    g.fillText(trans.hiscore + scoreboard.getTopscore(), config.scoreX, config.scoreY);
+    g.fillText(trans.level + scoreboard.getLevel(), config.scoreX, config.scoreY + 30);
+    g.fillText(trans.lines + scoreboard.getLines(), config.scoreX, config.scoreY + 60);
+    g.fillText(trans.score + scoreboard.getScore(), config.scoreX, config.scoreY + 90);
+}
 
-    // scoreboard
-    g.fillStyle = textColor;
-    g.font = smallFont;
-    g.fillText('hiscore    ' + scoreboard.getTopscore(), scoreX, scoreY);
-    g.fillText('level      ' + scoreboard.getLevel(), scoreX, scoreY + 30);
-    g.fillText('lines      ' + scoreboard.getLines(), scoreX, scoreY + 60);
-    g.fillText('score      ' + scoreboard.getScore(), scoreX, scoreY + 90);
-
-    // preview
+function drawPreview() {
     let minX = 5, minY = 5, maxX = 0, maxY = 0;
     nextShape.pos.forEach(function (p) {
         minX = Math.min(minX, p[0]);
@@ -207,8 +188,9 @@ function drawUI() {
         maxX = Math.max(maxX, p[0]);
         maxY = Math.max(maxY, p[1]);
     });
-    const cx = previewCenterX - ((minX + maxX + 1) / 2.0 * blockSize);
-    const cy = previewCenterY - ((minY + maxY + 1) / 2.0 * blockSize);
+    const cx = config.previewCenterX - ((minX + maxX + 1) / 2.0 * config.blockSize);
+    const cy = config.previewCenterY - ((minY + maxY + 1) / 2.0 * config.blockSize);
+    drawRect(config.previewRect, config.gridBorderColor);
 
     g.translate(cx, cy);
     nextShape.shape.forEach(function (p) {

@@ -1,3 +1,5 @@
+import {BOARD_EMPTY} from "./board.js";
+
 export default class Shape {
 
     constructor(shape, o) {
@@ -34,7 +36,7 @@ export default class Shape {
         return pos.every(p => {
             const newCol = this.col + p[0];
             const newRow = this.row + p[1];
-            return grid[newRow][newCol] === -1;//EMPTY;
+            return grid[newRow][newCol] === BOARD_EMPTY
         });
     } 
     
@@ -58,7 +60,7 @@ export default class Shape {
         return this.pos.every(p => {
             const newCol = this.col + dir.x + p[0];
             const newRow = this.row + dir.y + p[1];
-            return grid[newRow][newCol] === -1;//EMPTY;
+            return grid[newRow][newCol] === BOARD_EMPTY
         });
     }    
 
@@ -79,4 +81,3 @@ const Shapes = {
     LShape: [[-1, -1], [0, -1], [0, 0], [0, 1]],
     JShape: [[1, -1], [0, -1], [0, 0], [0, 1]]
 };
-
